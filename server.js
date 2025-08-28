@@ -1,4 +1,3 @@
-// server.js
 console.log("Starting server process...");
 import dotenv from "dotenv";
 dotenv.config();

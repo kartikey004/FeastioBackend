@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import User from "../models/userModel.js";
 
-const protect = async (req, res, next) => {
+export const protect = async (req, res, next) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith("Bearer ")) {
@@ -39,5 +39,3 @@ const protect = async (req, res, next) => {
     return res.status(500).json({ error: "Internal server error" });
   }
 };
-
-export default protect;

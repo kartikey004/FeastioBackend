@@ -1,9 +1,9 @@
 import express from "express";
-import { aiChat } from "../controllers/aiChatController.js";
+import { updateProfile } from "../controllers/userControllers.js";
 import { protect } from "../middlewares/protect.js";
 
 const router = express.Router();
 
-router.post("/", protect, aiChat);
+router.put("/updateprofile", protect, updateProfile);
 
 export default router;
