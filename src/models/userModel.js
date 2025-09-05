@@ -25,7 +25,7 @@ const userSchema = new mongoose.Schema(
       required: function () {
         return this.authProvider === "local";
       },
-      minlength: 3,
+      minlength: 5,
       maxlength: 20,
       match: [
         /^[a-zA-Z0-9_]+$/,

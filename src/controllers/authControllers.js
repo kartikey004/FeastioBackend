@@ -97,7 +97,10 @@ export const googleAuth = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Google authentication error:", error.response?.data || error.message);
+    console.error(
+      "Google authentication error:",
+      error.response?.data || error.message
+    );
     return res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -207,5 +210,43 @@ export const loginUser = async (req, res) => {
   } catch (error) {
     console.error("Login user error:", error);
     res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const logoutUser = async (req, res) => {
+  try {
+    const userId = req.user?._id; // from auth middleware
+
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized",
+      });
+    }
+
+    // Find user and clear refresh token
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Clear the refresh token from database
+    user.refreshToken = null;
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: "Logged out successfully",
+    });
+  } catch (error) {
+    console.error("Error during logout:", error);
+    res.status(500).json({
+      success: false,
+      message: "Server error during logout",
+    });
   }
 };
