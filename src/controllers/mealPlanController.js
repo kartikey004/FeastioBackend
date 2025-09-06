@@ -136,11 +136,18 @@ export const getMealPlans = async (req, res) => {
     }
 
     // fetch all meal plans for this user
-    const plans = await MealPlan.find({ creatorId }).sort({ createdAt: -1 });
+    const plans = await MealPlan.findOne({ creatorId }).sort({ createdAt: -1 });
+
+    if (!plans) {
+      return res.status(404).json({
+        success: false,
+        message: "No meal plan found",
+      });
+    }
 
     res.status(200).json({
       success: true,
-      data: plans,
+      data: plans ? [plans] : [],
     });
   } catch (error) {
     console.error("Error fetching meal plans:", error);

@@ -1,6 +1,6 @@
-console.log("Starting server process...");
 import dotenv from "dotenv";
 dotenv.config();
+console.log("Starting server process...");
 
 import express from "express";
 import cors from "cors";

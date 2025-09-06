@@ -25,12 +25,12 @@ const userSchema = new mongoose.Schema(
       required: function () {
         return this.authProvider === "local";
       },
-      minlength: 5,
-      maxlength: 20,
-      match: [
-        /^[a-zA-Z0-9_]+$/,
-        "Username can only contain letters, numbers, and underscores",
-      ],
+      // minlength: 5,
+      // maxlength: 20,
+      // match: [
+      //   /^[a-zA-Z0-9_]+$/,
+      //   "Username can only contain letters, numbers, and underscores",
+      // ],
     },
     phoneNumber: {
       type: String,
@@ -46,6 +46,10 @@ const userSchema = new mongoose.Schema(
         return this.authProvider === "local";
       },
     },
+    otp: { type: String },
+    otpExpiry: { type: Date },
+    isVerified: { type: Boolean, default: false },
+
     profile: {
       dietaryRestrictions: { type: [String], default: [] },
       allergies: { type: [String], default: [] },

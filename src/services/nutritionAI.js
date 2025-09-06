@@ -24,7 +24,7 @@ export const getNutritionSummaryAndPlan = async (meals) => {
 
     1. Estimate the combined nutritional values (calories, protein (g), fat (g), carbohydrates (g)) 
        for the meals listed below.
-    2. Create a full 7-day meal plan. Each day must have Breakfast, Lunch, Snack and Dinner. 
+    2. Create a full 7-day meal plan. Always include all 7 days and each day must have Breakfast, Lunch, Snack and Dinner. No day should have stay empty. 
        Use realistic, healthy and balanced meals.
     3. Maximum limit per day is 2000 calories, protein maximum 50g, fat maximum 70g, carbohydrates maximum 260g.
 
