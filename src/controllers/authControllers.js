@@ -132,7 +132,7 @@ export const registerUser = async (req, res) => {
     }
 
     // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // const hashedPassword = await bcrypt.hash(password, 10);
 
     // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -160,7 +160,7 @@ export const registerUser = async (req, res) => {
       username,
       phoneNumber,
       profilePicture: null,
-      password: hashedPassword,
+      password,
       otp,
       otpExpiry,
       isVerified: false,
@@ -185,13 +185,26 @@ export const verifyOTP = async (req, res) => {
     const { userId, otp } = req.body;
 
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: "User not found" });
+    if (!user)
+      return res.status(404).json({
+        message:
+          "We could not find a user with this email. Please sign up first.",
+      });
+
     if (user.isVerified)
-      return res.status(400).json({ message: "User already verified" });
+      return res.status(400).json({
+        message: "Your account is already verified. You can log in directly.",
+      });
+
     if (user.otp !== otp.toString())
-      return res.status(400).json({ message: "Invalid OTP" });
+      return res.status(400).json({
+        message: "The OTP you entered is incorrect. Please try again.",
+      });
+
     if (user.otpExpiry < new Date())
-      return res.status(400).json({ message: "OTP expired" });
+      return res
+        .status(400)
+        .json({ message: "Your OTP has expired. Please request a new one." });
 
     user.isVerified = true;
     user.otp = undefined;
@@ -227,18 +240,26 @@ export const resendOTP = async (req, res) => {
     const { email } = req.body;
 
     if (!email) {
-      return res.status(400).json({ message: "Email is required" });
+      return res
+        .status(400)
+        .json({ message: "Please provide your email address to continue." });
     }
 
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: "User not found" });
+      return res
+        .status(404)
+        .json({
+          message: "No account found with this email. Please sign up first.",
+        });
     }
 
     if (user.isVerified) {
       return res
         .status(400)
-        .json({ message: "User is already verified. Please login." });
+        .json({
+          message: "Your email is already verified. You can log in directly.",
+        });
     }
 
     // Generate new OTP
@@ -354,7 +375,7 @@ export const logoutUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-
+    console.log("🔐 Incoming login request:", { email, password });
     // Validate inputs
     if (!email || !password) {
       return res
@@ -362,21 +383,33 @@ export const loginUser = async (req, res) => {
         .json({ message: "Email and password are required" });
     }
 
+    const emailNorm = email.toLowerCase().trim();
+
     // Find user and include password
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email: emailNorm }).select("+password");
+    console.log("📂 User found in DB:", user ? user._id : "No user");
+
     if (!user) {
+      console.warn("❌ No user found with email:", emailNorm);
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
+    console.log("✅ isVerified status:", user.isVerified);
     // Check if user is verified
     if (!user.isVerified) {
+      console.warn("❌ User not verified:", emailNorm);
       return res
         .status(403)
         .json({ message: "Please verify your email before logging in" });
     }
 
+    console.log("Entered password (plain):", password);
+    console.log("Stored password (hashed):", user.password);
+
     // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log("🔍 Password match result:", isMatch);
+
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid email or password" });
     }
@@ -385,9 +418,12 @@ export const loginUser = async (req, res) => {
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
+    console.log("✅ Tokens generated for user:", user._id);
     // Save refresh token in DB
     user.refreshToken = refreshToken;
     await user.save();
+
+    console.log("💾 Refresh token saved in DB for user:", user._id);
 
     res.status(200).json({
       message: "Login successful",
@@ -402,7 +438,7 @@ export const loginUser = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Login user error:", error);
+    console.error("🔥 Login user error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };

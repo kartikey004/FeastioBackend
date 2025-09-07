@@ -20,13 +20,20 @@ export const getNutritionSummaryAndPlan = async (meals) => {
     );
 
     const prompt = `
-    You are a nutrition expert and meal planner.
+  You are a nutrition expert and meal planner.
 
     1. Estimate the combined nutritional values (calories, protein (g), fat (g), carbohydrates (g)) 
-       for the meals listed below.
-    2. Create a full 7-day meal plan. Always include all 7 days and each day must have Breakfast, Lunch, Snack and Dinner. No day should have stay empty. 
-       Use realistic, healthy and balanced meals.
+      for the meals listed below.
+    2. Create a complete 7-day meal plan. 
+      You MUST generate exactly 7 days: Monday, Tuesday, Wednesday, Thursday, Friday, Saturday, Sunday.
+      Each day MUST have exactly 4 meals: Breakfast, Lunch, Snack, and Dinner.
+      That means there must be exactly 28 meals in total. 
+      If any day or meal is missing, the entire output is INVALID.
     3. Maximum limit per day is 2000 calories, protein maximum 50g, fat maximum 70g, carbohydrates maximum 260g.
+    4. Every recipeSnapshot must include ALL of these fields without being empty: 
+     title, description, imageUrl, ingredients, cookTime, nutritionalInfo (with calories, protein, fat, carbohydrates), cuisine.
+    5. Double-check before finalizing: Ensure there are exactly 7 days × 4 meals = 28 meals, and every recipeSnapshot has all fields.
+
 
     Meals provided:
     ${mealDescriptions.join("\n")}
@@ -69,20 +76,20 @@ export const getNutritionSummaryAndPlan = async (meals) => {
           "recipeSnapshot": { ... }
         }],
         // Repeat for each day of the week
-      "Tuesday": [ { ...same as Monday with 4 meals... } ],
-      "Wednesday": [ {...same as Monday with 4 meals... } ],
-      "Thursday": [ {...same as Monday with 4 meals... } ],
-      "Friday": [ { ...same as Monday with 4 meals... } ],
-      "Saturday": [ { ...same as Monday with 4 meals...} ],
-      "Sunday": [ { ...same as Monday with 4 meals... } ]
+      "Tuesday": [ { ...4 meals... } ],
+      "Wednesday": [ 4 meals... } ],
+      "Thursday": [ 4 meals... } ],
+      "Friday": [ { ... 4 meals... } ],
+      "Saturday": [ { ...4 meals...} ],
+      "Sunday": [ { ...4 meals... } ]
       }
     }
-    IMPORTANT: 
-    - Just like I showed in the example using Monday, return the full structure with all fields.
-    - All 7 days (Monday to Sunday) must have exactly 4 meals (Breakfast, Lunch, Snack, Dinner).
-    - Meal titles should be creative and not repetitive. Descriptions should be concise and complete.
-    - Each meal must follow the same schema.
-    - Return strictly valid JSON without extra text or commentary.
+   IMPORTANT:
+    - You must ALWAYS return exactly 7 days × 4 meals = 28 meals.
+    - No empty days, no missing meals, no missing fields.
+    - Meal titles must be creative and non-repetitive.
+    - Descriptions must be concise but complete.
+    - Output must be strictly valid JSON. Do not add any text outside JSON.
     `;
 
     const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
