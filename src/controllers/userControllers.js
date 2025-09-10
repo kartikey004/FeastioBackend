@@ -6,21 +6,42 @@ import User from "../models/userModel.js";
 export const updateProfile = async (req, res) => {
   try {
     const userId = req.user._id; // from protect middleware
-    const { dietaryRestrictions, allergies, healthGoals, cuisinePreferences } =
-      req.body;
+    const {
+      dietaryRestrictions,
+      allergies,
+      healthGoals,
+      cuisinePreferences,
+      gender,
+      age,
+      height,
+      weight,
+      activityLevel,
+      healthConditions,
+      menstrualHealth,
+    } = req.body;
 
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Only update profile fields provided in request
+    // Only update profile fields if provided in request
     user.profile.dietaryRestrictions =
       dietaryRestrictions ?? user.profile.dietaryRestrictions;
     user.profile.allergies = allergies ?? user.profile.allergies;
     user.profile.healthGoals = healthGoals ?? user.profile.healthGoals;
     user.profile.cuisinePreferences =
       cuisinePreferences ?? user.profile.cuisinePreferences;
+
+    user.profile.gender = gender ?? user.profile.gender;
+    user.profile.age = age ?? user.profile.age;
+    user.profile.height = height ?? user.profile.height;
+    user.profile.weight = weight ?? user.profile.weight;
+    user.profile.activityLevel = activityLevel ?? user.profile.activityLevel;
+    user.profile.healthConditions =
+      healthConditions ?? user.profile.healthConditions;
+    user.profile.menstrualHealth =
+      menstrualHealth ?? user.profile.menstrualHealth;
 
     await user.save();
 

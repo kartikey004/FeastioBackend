@@ -27,26 +27,28 @@ export const generateMealPlan = async (req, res) => {
     console.log("👤 User:", req.user);
 
     const {
-      dietaryRestrictions,
-      allergies,
-      healthGoals,
-      cuisinePreferences,
+      dietaryRestrictions = [],
+      allergies = [],
+      healthGoals = [],
+      cuisinePreferences = [],
+      gender,
+      age,
+      height,
+      weight,
+      activityLevel,
+      healthConditions = [],
+      menstrualHealth,
       name,
     } = req.body;
 
-    console.log("⚙️ Preferences received:", {
-      dietaryRestrictions,
-      allergies,
-      healthGoals,
-      cuisinePreferences,
-      name,
-    });
+    console.log("⚙️ Profile received:", req.body);
 
+    // Validate
     if (
-      !dietaryRestrictions &&
-      !allergies &&
-      !healthGoals &&
-      !cuisinePreferences
+      !dietaryRestrictions.length &&
+      !allergies.length &&
+      !healthGoals.length &&
+      !cuisinePreferences.length
     ) {
       console.warn("⚠️ Missing personalization parameters");
       return res.status(400).json({
@@ -55,20 +57,32 @@ export const generateMealPlan = async (req, res) => {
       });
     }
 
-    console.log("🤖 Calling nutrition AI service...");
-    const aiResponse = await getNutritionSummaryAndPlan([
-      {
-        mealType: "Seed",
-        recipeSnapshot: {
-          title: "Custom meal based on preferences",
-          ingredients: [
-            ...(dietaryRestrictions || []),
-            ...(allergies || []),
-            ...(cuisinePreferences || []),
-          ],
-        },
+    // ✅ Pass full profile info to AI
+    console.log("🤖 Calling nutrition AI service with full profile...");
+    const aiResponse = await getNutritionSummaryAndPlan({
+      profile: {
+        gender,
+        age,
+        height,
+        weight,
+        activityLevel,
+        healthConditions,
+        menstrualHealth,
+        dietaryRestrictions,
+        allergies,
+        healthGoals,
+        cuisinePreferences,
       },
-    ]);
+      seedMeals: [
+        {
+          mealType: "Seed",
+          recipeSnapshot: {
+            title: "Custom meal based on user profile",
+          },
+        },
+      ],
+    });
+
     console.log("✅ AI response received:", aiResponse);
 
     // 2. Normalize plan
@@ -102,6 +116,19 @@ export const generateMealPlan = async (req, res) => {
       name: name || `${req.user.name || "User"}'s Personalized Plan`,
       totalNutritionalSummary: aiResponse.totalNutritionalSummary,
       plan: normalizedPlan,
+      profile: {
+        gender,
+        age,
+        height,
+        weight,
+        activityLevel,
+        healthConditions,
+        menstrualHealth,
+        dietaryRestrictions,
+        allergies,
+        healthGoals,
+        cuisinePreferences,
+      },
     });
 
     console.log("💾 Saving new plan to DB...");

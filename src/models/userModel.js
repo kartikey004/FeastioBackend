@@ -55,6 +55,36 @@ const userSchema = new mongoose.Schema(
       allergies: { type: [String], default: [] },
       healthGoals: { type: [String], default: [] },
       cuisinePreferences: { type: [String], default: [] },
+
+      gender: {
+        type: String,
+        enum: ["Male", "Female", "Other", "Prefer not to say"],
+      },
+      age: { type: Number, min: 1, max: 120 },
+      height: { type: Number, min: 30, max: 300 }, // in cm
+      weight: { type: Number, min: 1, max: 500 }, // in kg
+      activityLevel: {
+        type: String,
+        enum: [
+          "Sedentary",
+          "Lightly Active",
+          "Moderately Active",
+          "Very Active",
+          "Athlete",
+        ],
+      },
+      healthConditions: { type: [String], default: [] },
+      menstrualHealth: {
+        type: String,
+        enum: [
+          "Regular cycle",
+          "Irregular cycle",
+          "PCOS",
+          "Menopause / Perimenopause",
+          "Prefer not to say",
+          null,
+        ],
+      },
     },
     profilePicture: { type: String },
     refreshToken: { type: String },
