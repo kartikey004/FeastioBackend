@@ -92,7 +92,6 @@ const userSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Pre-save hook: hash password if modified
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
 
@@ -104,7 +103,6 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// Remove password from output
 userSchema.methods.toJSON = function () {
   const user = this.toObject();
   delete user.password;

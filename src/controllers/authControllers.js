@@ -50,13 +50,11 @@ export const registerUser = async (req, res) => {
       phoneNumber,
     });
 
-    // Basic validation
     if (!username || !email || !password || !phoneNumber) {
       console.warn("Validation failed: missing fields");
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       console.warn("Registration attempt with existing email:", email);
@@ -68,25 +66,17 @@ export const registerUser = async (req, res) => {
     // Hash password
     // const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Generate 6-digit OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
-    // Debug env variables
-    console.log("SMTP Config:");
-    console.log(" - EMAIL_USER:", process.env.EMAIL_USER);
-    console.log(" - EMAIL_PASS exists:", !!process.env.EMAIL_PASS);
-
-    // Try sending OTP email first
     try {
       await sendOTPEmail(email, otp);
       console.log("OTP email sent successfully to:", email);
     } catch (err) {
-      console.error("❌ Failed to send OTP email:", err.message);
+      console.error("Failed to send OTP email:", err.message);
       return res.status(500).json({ message: "Failed to send OTP email" });
     }
 
-    // Create new user (only after email is sent)
     const user = await User.create({
       authProvider: "local",
       providerId: email,
@@ -100,13 +90,12 @@ export const registerUser = async (req, res) => {
       isVerified: false,
     });
 
-    console.log("✅ User created in DB:", user._id);
+    console.log("User created in DB:", user._id);
 
-    // Respond without tokens (user must verify first)
     res.status(201).json({
       message:
         "User registered successfully. Please verify your email with the OTP sent.",
-      userId: user._id, // needed for OTP verification
+      userId: user._id,
     });
   } catch (error) {
     console.error("Register user error:", error);
@@ -144,7 +133,6 @@ export const verifyOTP = async (req, res) => {
     user.otp = undefined;
     user.otpExpiry = undefined;
 
-    // Generate tokens after verification
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     user.refreshToken = refreshToken;
@@ -192,15 +180,13 @@ export const resendOTP = async (req, res) => {
       });
     }
 
-    // Generate new OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
     user.otp = otp;
     user.otpExpiry = otpExpiry;
     await user.save();
 
-    // Send OTP via email
     await sendOTPEmail(email, otp);
 
     res.status(200).json({
@@ -215,7 +201,7 @@ export const resendOTP = async (req, res) => {
 
 export const logoutUser = async (req, res) => {
   try {
-    const userId = req.user?._id; // from auth middleware
+    const userId = req.user?._id;
 
     if (!userId) {
       return res.status(401).json({
@@ -224,7 +210,6 @@ export const logoutUser = async (req, res) => {
       });
     }
 
-    // Find user and clear refresh token
     const user = await User.findById(userId);
 
     if (!user) {
@@ -234,7 +219,6 @@ export const logoutUser = async (req, res) => {
       });
     }
 
-    // Clear the refresh token from database
     user.refreshToken = null;
     await user.save();
 
@@ -254,8 +238,8 @@ export const logoutUser = async (req, res) => {
 export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
-    console.log("🔐 Incoming login request:", { email, password });
-    // Validate inputs
+    console.log("Incoming login request:", { email, password });
+
     if (!email || !password) {
       return res
         .status(400)
@@ -264,19 +248,18 @@ export const loginUser = async (req, res) => {
 
     const emailNorm = email.toLowerCase().trim();
 
-    // Find user and include password
     const user = await User.findOne({ email: emailNorm }).select("+password");
-    console.log("📂 User found in DB:", user ? user._id : "No user");
+    console.log("User found in DB:", user ? user._id : "No user");
 
     if (!user) {
-      console.warn("❌ No user found with email:", emailNorm);
+      console.warn("No user found with email:", emailNorm);
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    console.log("✅ isVerified status:", user.isVerified);
-    // Check if user is verified
+    console.log("isVerified status:", user.isVerified);
+
     if (!user.isVerified) {
-      console.warn("❌ User not verified:", emailNorm);
+      console.warn("User not verified:", emailNorm);
       return res
         .status(403)
         .json({ message: "Please verify your email before logging in" });
@@ -285,7 +268,6 @@ export const loginUser = async (req, res) => {
     console.log("Entered password (plain):", password);
     console.log("Stored password (hashed):", user.password);
 
-    // Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     console.log("🔍 Password match result:", isMatch);
 
@@ -293,16 +275,15 @@ export const loginUser = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // Generate tokens
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
 
-    console.log("✅ Tokens generated for user:", user._id);
-    // Save refresh token in DB
+    console.log("Tokens generated for user:", user._id);
+
     user.refreshToken = refreshToken;
     await user.save();
 
-    console.log("💾 Refresh token saved in DB for user:", user._id);
+    console.log("Refresh token saved in DB for user:", user._id);
 
     res.status(200).json({
       message: "Login successful",
@@ -317,7 +298,7 @@ export const loginUser = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("🔥 Login user error:", error);
+    console.error("Login user error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
@@ -337,15 +318,13 @@ export const forgotPassword = async (req, res) => {
         .json({ message: "No account found with this email" });
     }
 
-    // Generate OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
     user.otp = otp;
     user.otpExpiry = otpExpiry;
     await user.save();
 
-    // Send password reset OTP
     await sendPasswordResetOTP(email, otp, user.username || "User");
 
     res.status(200).json({
@@ -358,7 +337,6 @@ export const forgotPassword = async (req, res) => {
   }
 };
 
-// 2️⃣ Reset Password - verify OTP + update password + auto-login
 export const resetPassword = async (req, res) => {
   try {
     const { email, otp, newPassword } = req.body;
@@ -382,15 +360,11 @@ export const resetPassword = async (req, res) => {
       return res.status(400).json({ message: "OTP has expired" });
     }
 
-    // Hash and update password
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    user.password = newPassword;
 
-    // Clear OTP fields
     user.otp = undefined;
     user.otpExpiry = undefined;
 
-    // Generate tokens (auto login)
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     user.refreshToken = refreshToken;
@@ -415,7 +389,6 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-// 3️⃣ Resend Password Reset OTP
 export const resendPasswordResetOTP = async (req, res) => {
   try {
     const { email } = req.body;
@@ -429,7 +402,6 @@ export const resendPasswordResetOTP = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Generate new OTP
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 

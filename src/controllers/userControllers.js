@@ -1,11 +1,8 @@
 import User from "../models/userModel.js";
 
-// @route   PUT /api/users/profile
-// @desc    Update user profile (dietaryRestrictions, allergies, healthGoals, cuisinePreferences)
-// @access  Private
 export const updateProfile = async (req, res) => {
   try {
-    const userId = req.user._id; // from protect middleware
+    const userId = req.user._id;
     const {
       dietaryRestrictions,
       allergies,
@@ -25,7 +22,6 @@ export const updateProfile = async (req, res) => {
       return res.status(404).json({ message: "User not found" });
     }
 
-    // Only update profile fields if provided in request
     user.profile.dietaryRestrictions =
       dietaryRestrictions ?? user.profile.dietaryRestrictions;
     user.profile.allergies = allergies ?? user.profile.allergies;
@@ -57,7 +53,7 @@ export const updateProfile = async (req, res) => {
 
 export const getUserProfile = async (req, res) => {
   try {
-    const userId = req.user?._id; // from auth middleware
+    const userId = req.user?._id;
     if (!userId) {
       return res.status(401).json({ success: false, message: "Unauthorized" });
     }
@@ -72,7 +68,6 @@ export const getUserProfile = async (req, res) => {
         .json({ success: false, message: "User not found" });
     }
 
-    // If no profile picture, fallback to first letter of username
     const profilePicture =
       user.profilePicture ||
       (user.username ? user.username.charAt(0).toUpperCase() : null);

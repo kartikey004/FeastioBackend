@@ -21,10 +21,10 @@ const getDefaultMealTime = (mealType) => {
 };
 
 export const generateMealPlan = async (req, res) => {
-  console.log("📩 Hit /mealPlans/generate");
+  console.log("Hit /mealPlans/generate");
   try {
-    const creatorId = req.user?._id; // from protect.js
-    console.log("👤 User:", req.user);
+    const creatorId = req.user?._id;
+    console.log("User:", req.user);
 
     const {
       dietaryRestrictions = [],
@@ -41,24 +41,22 @@ export const generateMealPlan = async (req, res) => {
       name,
     } = req.body;
 
-    console.log("⚙️ Profile received:", req.body);
+    console.log("Profile received:", req.body);
 
-    // Validate
     if (
       !dietaryRestrictions.length &&
       !allergies.length &&
       !healthGoals.length &&
       !cuisinePreferences.length
     ) {
-      console.warn("⚠️ Missing personalization parameters");
+      console.warn("Missing personalization parameters");
       return res.status(400).json({
         success: false,
         message: "At least one personalization parameter is required",
       });
     }
 
-    // ✅ Pass full profile info to AI
-    console.log("🤖 Calling nutrition AI service with full profile...");
+    console.log("Calling nutrition AI service with full profile...");
     const aiResponse = await getNutritionSummaryAndPlan({
       profile: {
         gender,
@@ -83,12 +81,11 @@ export const generateMealPlan = async (req, res) => {
       ],
     });
 
-    console.log("✅ AI response received:", aiResponse);
+    console.log("AI response received:", aiResponse);
 
-    // 2. Normalize plan
     const normalizedPlan = {};
     for (const day of Object.keys(aiResponse.plan)) {
-      console.log(`📅 Normalizing plan for day: ${day}`);
+      console.log(`Normalizing plan for day: ${day}`);
       normalizedPlan[day] = aiResponse.plan[day].map((meal) => ({
         mealType: meal.mealType,
         recipeSnapshot: {
@@ -108,9 +105,8 @@ export const generateMealPlan = async (req, res) => {
       }));
     }
 
-    console.log("📦 Normalized plan ready:", normalizedPlan);
+    console.log("Normalized plan ready:", normalizedPlan);
 
-    // 3. Save generated plan in DB
     const newPlan = new MealPlan({
       creatorId,
       name: name || `${req.user.name || "User"}'s Personalized Plan`,
@@ -131,9 +127,9 @@ export const generateMealPlan = async (req, res) => {
       },
     });
 
-    console.log("💾 Saving new plan to DB...");
+    console.log("Saving new plan to DB...");
     await newPlan.save();
-    console.log("✅ Meal plan saved:", newPlan._id);
+    console.log("Meal plan saved:", newPlan._id);
 
     // 4. Return generated plan
     res.status(201).json({
@@ -142,7 +138,7 @@ export const generateMealPlan = async (req, res) => {
       data: newPlan,
     });
   } catch (error) {
-    console.error("❌ Error generating meal plan:", error);
+    console.error("Error generating meal plan:", error);
     res.status(500).json({
       success: false,
       message: "Server error while generating meal plan",
@@ -153,7 +149,7 @@ export const generateMealPlan = async (req, res) => {
 
 export const getMealPlans = async (req, res) => {
   try {
-    const creatorId = req.user?.id; // from auth middleware
+    const creatorId = req.user?.id;
 
     if (!creatorId) {
       return res.status(401).json({
@@ -162,7 +158,6 @@ export const getMealPlans = async (req, res) => {
       });
     }
 
-    // fetch all meal plans for this user
     const plans = await MealPlan.findOne({ creatorId }).sort({ createdAt: -1 });
 
     if (!plans) {
@@ -205,13 +200,11 @@ export const updateMealPlan = async (req, res) => {
     if (!mealPlan)
       return res.status(404).json({ message: "Meal plan not found" });
 
-    // Initialize recipeSnapshot if missing
     newMeal.recipeSnapshot = newMeal.recipeSnapshot || {
       title: newMeal.title || "",
       description: newMeal.description || "",
     };
 
-    // Fetch AI nutrition and info
     const aiData = await updateMealNutritionAndInfo(newMeal.recipeSnapshot);
     if (aiData) {
       newMeal.recipeSnapshot.nutritionalInfo = aiData.nutritionalInfo || {};
@@ -220,17 +213,14 @@ export const updateMealPlan = async (req, res) => {
       newMeal.recipeSnapshot.cuisine = aiData.cuisine || "Unknown";
     }
 
-    // Ensure day exists in plan
     mealPlan.plan[day] = mealPlan.plan[day] || [];
 
-    // Update or add meal
     const mealIndex = mealPlan.plan[day].findIndex(
       (meal) => meal.mealType === newMeal.mealType
     );
     if (mealIndex === -1) mealPlan.plan[day].push(newMeal);
     else mealPlan.plan[day][mealIndex] = newMeal;
 
-    // Update total nutritional summary
     const summary = { calories: 0, protein: 0, fat: 0, carbohydrates: 0 };
     Object.values(mealPlan.plan).forEach((meals) => {
       if (Array.isArray(meals)) {
@@ -261,25 +251,24 @@ export const updateMealPlan = async (req, res) => {
 };
 
 export const deleteMealPlan = async (req, res) => {
-  console.log("📩 Hit /mealPlans/:id [DELETE]");
   try {
     const { id } = req.params;
     const creatorId = req.user?.id;
-    console.log("🗑️ Deleting plan:", { id, creatorId });
+    console.log("Deleting plan:", { id, creatorId });
 
     const deletedPlan = await MealPlan.findOneAndDelete({ _id: id, creatorId });
     if (!deletedPlan) {
-      console.warn("⚠️ Meal Plan not found or unauthorized");
+      console.warn("Meal Plan not found or unauthorized");
       return res.status(404).json({
         success: false,
         message: "Meal Plan not found or not authorized to delete",
       });
     }
 
-    console.log("✅ Meal Plan deleted:", deletedPlan._id);
+    console.log("Meal Plan deleted:", deletedPlan._id);
     res.json({ success: true, message: "Meal Plan deleted successfully" });
   } catch (error) {
-    console.error("❌ Error deleting meal plan:", error);
+    console.error("Error deleting meal plan:", error);
     res
       .status(500)
       .json({ success: false, message: "Error deleting meal plan" });
@@ -309,8 +298,8 @@ export const getTodayMealPlan = async (req, res) => {
     ];
     const currentDay = dayNames[today.getDay()];
 
-    const mealPlan = await MealPlan.findOne({
-      creatorId: userId,
+    const mealPlan = await MealPlan.findOne({ creatorId: userId }).sort({
+      createdAt: -1,
     });
 
     if (!mealPlan) {
