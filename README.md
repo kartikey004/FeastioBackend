@@ -10,18 +10,25 @@ Backend server for **Feastio**, responsible for handling API requests, authentic
 - [Tech Stack](#tech-stack)
 - [Folder Structure](#folder-structure)
 - [Setup and Installation](#setup-and-installation)
-- [Running the Server](#running-the-server)
-- [Environment Variables](#environment-variables)
-- [API Endpoints](#api-endpoints)
-- [Contributing](#contributing)
-- [License](#license)
+- [Running the server](#running-the-server)
+- [Contact](#contact)
 
 ---
 
 ## Overview
 
-Feastio Backend provides the core server functionalities for the Feastio application.  
-It includes API routing, middleware, authentication, and database interactions.
+Feastio Backend is the server-side component of the Feastio platform, built using **Node.js** and **Express.js**, with **MongoDB** for data storage and **Firebase** for additional services.  
+
+The backend provides the core functionality to support the AI-driven meal planning and health assistant, including:  
+
+- API endpoints to manage 7-day meal plans, including ingredients, cooking time, and detailed macronutrient information.  
+- Integration with the **Gemini API** to facilitate a conversational health and fitness assistant.  
+- Daily nutrition tips management, including auto-refreshing content for enhanced user engagement.  
+- User personalization logic based on diet, allergies, activity levels, and health preferences.  
+- Support for **Menstrual Health** preferences (Regular, Irregular, PCOS, Menopause) for female users, enabling context-aware and inclusive meal planning.  
+- Secure authentication and authorization, including OTP email verification via Nodemailer.  
+
+Feastio Backend ensures a robust, scalable, and secure foundation for delivering a personalized nutrition and health experience across the platform.
 
 ---
 
@@ -67,17 +74,18 @@ pnpm install
 npm install
 
 # Create a .env file in the root directory and configure the required environment variables
+```
+---
 
-# Running the Server
+## Running the Server
 
+```bash
 # For development
 pnpm dev
 
 # For production
 node server.js
 ```
-
-
 ---
 
 ## Contact
