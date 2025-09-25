@@ -8,7 +8,6 @@ Backend server for **Feastio**, responsible for handling API requests, authentic
 
 - [Overview](#overview)
 - [Tech Stack](#tech-stack)
-- [Folder Structure](#folder-structure)
 - [Setup and Installation](#setup-and-installation)
 - [Running the server](#running-the-server)
 - [Contact](#contact)
@@ -41,22 +40,6 @@ Feastio Backend ensures a robust, scalable, and secure foundation for delivering
 - **Database**: MongoDB
 - **Authentication**: JWT  
 
----
-
-## Folder Structure
-
-```bash
-FeastioBackend/
-├── src/               # Application source code
-│   ├── routes/        # API routes
-│   ├── controllers/   # Route handlers and business logic
-│   ├── models/        # Database models
-│   └── utils/         # Utility functions
-├── server.js          # Server entry point
-├── package.json
-├── pnpm-lock.yaml
-└── .gitignore
-```
 ---
 
 ## Setup and Installation
@@ -92,7 +75,6 @@ node server.js
 
 For any questions, issues, or suggestions regarding this project, you can reach out to:
 
-- **Name**: Kartikey  
 - **Email**: kartikeym004@gmail.com
 - **GitHub**: [https://github.com/kartikey004](https://github.com/kartikey004)
 
