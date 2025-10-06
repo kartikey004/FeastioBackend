@@ -4,21 +4,7 @@ import {
   updateMealNutritionAndInfo,
 } from "../services/nutritionAI.js";
 import mongoose from "mongoose";
-
-const getDefaultMealTime = (mealType) => {
-  switch (mealType.toLowerCase()) {
-    case "breakfast":
-      return "08:00 AM";
-    case "lunch":
-      return "01:00 PM";
-    case "snack":
-      return "04:00 PM";
-    case "dinner":
-      return "08:00 PM";
-    default:
-      return "12:00 PM";
-  }
-};
+import { getDefaultMealTime } from "../utils/getMealTime.js";
 
 export const generateMealPlan = async (req, res) => {
   console.log("Hit /mealPlans/generate");
@@ -102,6 +88,7 @@ export const generateMealPlan = async (req, res) => {
           },
           cuisine: meal.recipeSnapshot.cuisine || "General",
         },
+        mealTime: getDefaultMealTime(meal.mealType),
       }));
     }
 
@@ -218,6 +205,12 @@ export const updateMealPlan = async (req, res) => {
     const mealIndex = mealPlan.plan[day].findIndex(
       (meal) => meal.mealType === newMeal.mealType
     );
+
+    if (mealIndex !== -1 && !newMeal.mealTime) {
+      newMeal.mealTime =
+        mealPlan.plan[day][mealIndex]?.mealTime ||
+        getDefaultMealTime(newMeal.mealType);
+    }
     if (mealIndex === -1) mealPlan.plan[day].push(newMeal);
     else mealPlan.plan[day][mealIndex] = newMeal;
 
@@ -335,7 +328,7 @@ export const getTodayMealPlan = async (req, res) => {
           cookTime: meal.recipeSnapshot?.cookTime || null,
           cuisine: meal.recipeSnapshot?.cuisine || null,
           completed: false,
-          scheduledTime: getDefaultMealTime(meal.mealType),
+          mealTime: meal.mealTime || getDefaultMealTime(meal.mealType),
         };
       }
     });
@@ -386,5 +379,36 @@ export const getTodayMealPlan = async (req, res) => {
       message: "Internal server error while fetching meal plan",
       error: process.env.NODE_ENV === "development" ? error.message : undefined,
     });
+  }
+};
+
+export const updateMealTime = async (req, res) => {
+  try {
+    const creatorId = req.user?._id;
+    const { day, mealType, newTime } = req.body;
+
+    if (!day || !mealType || !newTime) {
+      return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const mealPlan = await MealPlan.findOne({ creatorId }).sort({
+      createdAt: -1,
+    });
+    if (!mealPlan)
+      return res.status(404).json({ message: "Meal plan not found" });
+
+    const mealIndex = mealPlan.plan[day].findIndex(
+      (m) => m.mealType === mealType
+    );
+    if (mealIndex === -1)
+      return res.status(404).json({ message: "Meal not found" });
+
+    mealPlan.plan[day][mealIndex].mealTime = newTime;
+
+    await mealPlan.save();
+    res.json({ success: true, message: "Meal time updated successfully" });
+  } catch (error) {
+    console.error("Error updating meal time:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };

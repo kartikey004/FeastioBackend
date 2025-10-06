@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 const { Schema } = mongoose;
+import { getDefaultMealTime } from "../utils/getMealTime.js";
 
 const totalNutritionalSummarySchema = new Schema(
   {
@@ -38,6 +39,20 @@ const mealSchema = new Schema(
     },
     recipeSnapshot: {
       type: recipeSnapshotSchema,
+    },
+    mealTime: {
+      type: String,
+      required: true,
+      default: function () {
+        return getDefaultMealTime(this.mealType);
+      },
+      validate: {
+        validator: function (v) {
+          return /^([01]\d|2[0-3]):([0-5]\d)$/.test(v);
+        },
+        message: (props) =>
+          `${props.value} is not a valid 24-hour time (HH:MM)`,
+      },
     },
   },
   { _id: false }

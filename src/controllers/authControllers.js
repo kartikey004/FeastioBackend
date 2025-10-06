@@ -27,6 +27,7 @@ export const refreshAccessToken = async (req, res) => {
     const newRefreshToken = generateRefreshToken(user);
 
     user.refreshToken = newRefreshToken;
+
     await user.save();
 
     res.status(200).json({
@@ -281,6 +282,7 @@ export const loginUser = async (req, res) => {
     console.log("Tokens generated for user:", user._id);
 
     user.refreshToken = refreshToken;
+
     await user.save();
 
     console.log("Refresh token saved in DB for user:", user._id);
