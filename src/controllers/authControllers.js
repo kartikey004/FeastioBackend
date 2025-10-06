@@ -45,58 +45,32 @@ export const registerUser = async (req, res) => {
   try {
     const { username, email, password, phoneNumber } = req.body;
 
-    console.log("Incoming registration request:", {
-      username,
-      email,
-      phoneNumber,
-    });
-
     if (!username || !email || !password || !phoneNumber) {
-      console.warn("Validation failed: missing fields");
       return res.status(400).json({ message: "All fields are required" });
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      console.warn("Registration attempt with existing email:", email);
       return res
         .status(400)
         .json({ message: "User already exists with this email" });
     }
 
-    // Hash password
-    // const hashedPassword = await bcrypt.hash(password, 10);
-
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+    const otpExpiry = new Date(Date.now() + 10 * 60 * 1000);
 
-    try {
-      await sendOTPEmail(email, otp);
-      console.log("OTP email sent successfully to:", email);
-    } catch (err) {
-      console.error("Failed to send OTP email:", err.message);
-      return res.status(500).json({ message: "Failed to send OTP email" });
-    }
+    await sendOTPEmail(email, otp);
 
-    const user = await User.create({
-      authProvider: "local",
-      providerId: email,
-      email,
-      username,
-      phoneNumber,
-      profilePicture: null,
-      password,
-      otp,
-      otpExpiry,
-      isVerified: false,
-    });
+    const tempToken = jwt.sign(
+      { username, email, password, phoneNumber, otp, otpExpiry },
+      process.env.OTP_SECRET,
+      { expiresIn: "10m" }
+    );
 
-    console.log("User created in DB:", user._id);
-
-    res.status(201).json({
+    res.status(200).json({
       message:
-        "User registered successfully. Please verify your email with the OTP sent.",
-      userId: user._id,
+        "OTP sent to your email. Please verify to complete registration.",
+      tempToken,
     });
   } catch (error) {
     console.error("Register user error:", error);
@@ -106,42 +80,53 @@ export const registerUser = async (req, res) => {
 
 export const verifyOTP = async (req, res) => {
   try {
-    const { userId, otp } = req.body;
+    const { tempToken, otp } = req.body;
 
-    const user = await User.findById(userId);
-    if (!user)
-      return res.status(404).json({
-        message:
-          "We could not find a user with this email. Please sign up first.",
-      });
+    if (!tempToken || !otp) {
+      return res.status(400).json({ message: "Missing token or OTP" });
+    }
 
-    if (user.isVerified)
-      return res.status(400).json({
-        message: "Your account is already verified. You can log in directly.",
-      });
+    let decoded;
+    try {
+      decoded = jwt.verify(tempToken, process.env.OTP_SECRET);
+    } catch (err) {
+      return res.status(400).json({ message: "OTP token expired or invalid" });
+    }
 
-    if (user.otp !== otp.toString())
-      return res.status(400).json({
-        message: "The OTP you entered is incorrect. Please try again.",
-      });
+    const {
+      username,
+      email,
+      password,
+      phoneNumber,
+      otp: storedOtp,
+      otpExpiry,
+    } = decoded;
 
-    if (user.otpExpiry < new Date())
-      return res
-        .status(400)
-        .json({ message: "Your OTP has expired. Please request a new one." });
+    if (otp !== storedOtp) {
+      return res.status(400).json({ message: "Invalid OTP" });
+    }
 
-    user.isVerified = true;
-    user.otp = undefined;
-    user.otpExpiry = undefined;
+    if (new Date(otpExpiry) < new Date()) {
+      return res.status(400).json({ message: "OTP has expired" });
+    }
+
+    const user = await User.create({
+      authProvider: "local",
+      providerId: email,
+      email,
+      username,
+      phoneNumber,
+      password,
+      isVerified: true,
+    });
 
     const accessToken = generateAccessToken(user);
     const refreshToken = generateRefreshToken(user);
     user.refreshToken = refreshToken;
-
     await user.save();
 
-    res.status(200).json({
-      message: "Email verified and logged in successfully",
+    res.status(201).json({
+      message: "Registration complete and logged in successfully",
       accessToken,
       refreshToken,
       user: {
@@ -153,7 +138,7 @@ export const verifyOTP = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error(error);
+    console.error("Verify OTP error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
