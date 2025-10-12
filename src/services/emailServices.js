@@ -146,7 +146,6 @@ export const sendOTPEmail = async (email, otp) => {
       <p>For your security:</p>
       <ul>
         <li>Don't share this OTP with anyone</li>
-        <li>This OTP is valid for 10 minutes only</li>
         <li>Use this OTP only on the Feastio mobile app</li>
         <li>Complete verification to unlock all features</li>
       </ul>
@@ -305,7 +304,6 @@ export const sendPasswordResetOTP = async (email, otp, username = "User") => {
       <p>For your security:</p>
       <ul>
         <li>Don't share this OTP with anyone</li>
-        <li>This OTP is valid for 10 minutes only</li>
         <li>Use this OTP only on the Feastio mobile app</li>
       </ul>
 
