@@ -64,13 +64,14 @@ export const registerUser = async (req, res) => {
     const tempToken = jwt.sign(
       { username, email, password, phoneNumber, otp, otpExpiry },
       process.env.OTP_SECRET,
-      { expiresIn: "10m" }
+      { expiresIn: "10m" },
     );
 
     res.status(200).json({
       message:
         "OTP sent to your email. Please verify to complete registration.",
       tempToken,
+      email: email,
     });
   } catch (error) {
     console.error("Register user error:", error);
