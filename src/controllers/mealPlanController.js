@@ -183,7 +183,9 @@ export const updateMealPlan = async (req, res) => {
         .json({ message: "day and newMeal.mealType are required" });
     }
 
-    const mealPlan = await MealPlan.findOne({ creatorId });
+    const mealPlan = await MealPlan.findOne({ creatorId }).sort({
+      createdAt: -1,
+    });
     if (!mealPlan)
       return res.status(404).json({ message: "Meal plan not found" });
 
@@ -203,7 +205,7 @@ export const updateMealPlan = async (req, res) => {
     mealPlan.plan[day] = mealPlan.plan[day] || [];
 
     const mealIndex = mealPlan.plan[day].findIndex(
-      (meal) => meal.mealType === newMeal.mealType
+      (meal) => meal.mealType === newMeal.mealType,
     );
 
     if (mealIndex !== -1 && !newMeal.mealTime) {
@@ -228,11 +230,17 @@ export const updateMealPlan = async (req, res) => {
     });
     mealPlan.totalNutritionalSummary = summary;
 
+    mealPlan.markModified("plan");
+
     await mealPlan.save();
 
     console.log("Meal plan updated successfully for:", day, newMeal.mealType);
 
-    res.json({ message: `${day} - ${newMeal.mealType} updated successfully!` });
+    // res.json({ message: `${day} - ${newMeal.mealType} updated successfully!` });
+    res.json({
+      message: `${day} - ${newMeal.mealType} updated successfully!`,
+      updatedMeal: newMeal,
+    });
   } catch (error) {
     console.error("Error updating meal plan:", error);
     res.status(500).json({
@@ -346,7 +354,7 @@ export const getTodayMealPlan = async (req, res) => {
         acc.carbohydrates += info.carbohydrates || 0;
         return acc;
       },
-      { calories: 0, protein: 0, fat: 0, carbohydrates: 0 }
+      { calories: 0, protein: 0, fat: 0, carbohydrates: 0 },
     );
 
     const response = {
@@ -363,7 +371,7 @@ export const getTodayMealPlan = async (req, res) => {
         meta: {
           totalMealsPlanned: todayMeals.length,
           availableMealTypes: Object.keys(mealData).filter(
-            (key) => mealData[key] !== null
+            (key) => mealData[key] !== null,
           ),
         },
       },
@@ -398,12 +406,14 @@ export const updateMealTime = async (req, res) => {
       return res.status(404).json({ message: "Meal plan not found" });
 
     const mealIndex = mealPlan.plan[day].findIndex(
-      (m) => m.mealType === mealType
+      (m) => m.mealType === mealType,
     );
     if (mealIndex === -1)
       return res.status(404).json({ message: "Meal not found" });
 
     mealPlan.plan[day][mealIndex].mealTime = newTime;
+
+    mealPlan.markModified("plan");
 
     await mealPlan.save();
     res.json({ success: true, message: "Meal time updated successfully" });

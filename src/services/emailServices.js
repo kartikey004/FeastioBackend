@@ -5,8 +5,8 @@ const transporter = nodemailer.createTransport({
   port: 465, // SSL
   secure: true, // true for 465
   auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
+    user: "feastio.connect@gmail.com",
+    pass: "mjhhcqhaidnvasuh",
   },
 });
 
@@ -34,7 +34,7 @@ export const COLORS = {
 
 export const sendOTPEmail = async (email, otp) => {
   const mailOptions = {
-    from: `"Feastio" <${process.env.EMAIL_USER}>`,
+    from: `"Feastio" <feastio.connect@gmail.com>`,
     to: email,
     subject: "OTP Verfication Code",
     html: `

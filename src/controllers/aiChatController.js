@@ -31,17 +31,15 @@ export const aiChat = async (req, res) => {
     const redisChatKey = `chatHistory:${creatorId}`;
     const redisProfileKey = `userProfile:${creatorId}`;
 
-    // 🔹 Fetch chat history from Redis
     let history = await redis.get(redisChatKey);
     history = history ? JSON.parse(history) : [];
     console.log("[aiChat] Current chat history length:", history.length);
 
-    // 🔹 Fetch user profile from Redis (always included)
     let userProfileContext = await redis.get(redisProfileKey);
     if (!userProfileContext) {
       console.log("[aiChat] Fetching user profile from DB for the first time");
       const user = await User.findById(creatorId).select(
-        "profile username email"
+        "profile username email",
       );
       if (user) {
         userProfileContext = `
@@ -59,7 +57,7 @@ User Profile (for context only, do not display to user):
 - Health Conditions: ${user.profile.healthConditions.join(", ")}
 - Menstrual Health: ${user.profile.menstrualHealth || "N/A"}
 `;
-        await redis.set(redisProfileKey, userProfileContext); // Store permanently / long TTL
+        await redis.set(redisProfileKey, userProfileContext);
         console.log("[aiChat] User profile stored in Redis");
       } else {
         console.log("[aiChat] User not found in DB");
@@ -68,18 +66,16 @@ User Profile (for context only, do not display to user):
       console.log("[aiChat] Loaded user profile from Redis");
     }
 
-    // 🔹 Keep only last MAX_USER_MESSAGES user messages and corresponding AI replies
     if (history.length > MAX_USER_MESSAGES * 2) {
       history = history.slice(-MAX_USER_MESSAGES * 2);
       console.log("[aiChat] Truncated chat history to last 30 user messages");
     }
 
-    // 🔹 Format chat context
     const contextMessages =
       history.map((h) => `${h.role}: ${h.content}`).join("\n") || "";
     console.log(
       "[aiChat] Formatted context messages length:",
-      contextMessages.length
+      contextMessages.length,
     );
 
     const fullPrompt = `
@@ -95,7 +91,8 @@ Strict Instructions, never go against these:
 2) Handle off-topic questions gracefully. Skip any part of the question that is not related to health, fitness, nutrition, meal planning, or general wellness.
 3) Keep responses plain text, clear, NO MARKDOWN TEXT, no **TEXT** and engaging.
 4) Explain facts in a friendly, human-like way:
-   - Use metaphors, examples, or short stories to make explanations lively and creative.
+   - Keep the tone friendly, energetic, and motivational, but strictly limit your response to 2-3 short sentences, put them in paragraphs if needed.
+   - Sometimes use metaphors, examples, or short stories to make explanations lively and creative.
    - Keep answers clear, energetic, and motivational.
 5) Add a follow-up question to encourage further discussion.
 6) Never mention that you are a model, AI, ML system, or anything related to Google, OpenAI, or AI technologies. Speak as if you are a human assistant.
@@ -111,25 +108,22 @@ AI:
 
     console.log("[aiChat] Sending prompt to Gemini");
 
-    // 🔹 Call Gemini
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash-lite",
+      model: "gemini-3.5-flash",
       temperature: 0.65,
     });
     const result = await model.generateContent(fullPrompt);
     const aiReply = result.response.text();
     console.log("[aiChat] Received AI reply:", aiReply);
 
-    // 🔹 Update Redis chat history (profile is NOT included)
     history.push({ role: "user", content: message });
     history.push({ role: "assistant", content: aiReply });
 
-    // Set chat history with 2-week TTL (14 days)
     await redis.set(
       redisChatKey,
       JSON.stringify(history),
       "EX",
-      60 * 60 * 24 * 14
+      60 * 60 * 24 * 14,
     );
     console.log("[aiChat] Chat history updated in Redis with 2-week TTL");
 
@@ -154,7 +148,7 @@ export const getChatHistory = async (req, res) => {
     const history = await redis.get(redisKey);
     console.log(
       "[getChatHistory] Fetched history length:",
-      history ? JSON.parse(history).length : 0
+      history ? JSON.parse(history).length : 0,
     );
 
     res.json({ history: history ? JSON.parse(history) : [] });
