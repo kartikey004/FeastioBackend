@@ -1,28 +1,9 @@
-// import nodemailer from "nodemailer";
+import { Resend } from "resend";
+import crypto from "crypto";
 
-// const transporter = nodemailer.createTransport({
-//   host: "smtp.gmail.com",
-//   port: 587, // SSL
-//   secure: false,
-//   auth: {
-//     user: process.env.EMAIL_USER,
-//     pass: process.env.EMAIL_PASS,
-//   },
-// });
+const resend = new Resend(process.env.RESEND_API_KEY);
 
-import nodemailer from "nodemailer";
-
-const transporter = nodemailer.createTransport({
-  service: "gmail",
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: {
-    rejectUnauthorized: false,
-  },
-  connectionTimeout: 10000,
-});
+const FROM = "Feastio <onboarding@resend.dev>";
 
 export const COLORS = {
   primary: "#00C674",
@@ -42,318 +23,147 @@ export const COLORS = {
   sageLight: "#E8F5E8",
   background: "#FFFFFF",
   cardBackground: "#f8f9fb",
-  google: "#DB4437",
-  facebook: "#1877F2",
-};
-
-export const sendOTPEmail = async (email, otp) => {
-  const mailOptions = {
-    from: `"Feastio" <feastio.connect@gmail.com>`,
-    to: email,
-    subject: "OTP Verfication Code",
-    html: `
-     <!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      line-height: 1.6;
-      color: ${COLORS.textPrimary};
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 15px;
-      background-color: ${COLORS.background};
-    }
-    .container {
-      background: ${COLORS.primaryLight};
-      padding: 2px;
-      border-radius: 12px;
-    }
-    .content {
-      background: ${COLORS.white};
-      padding: 25px;
-      border-radius: 10px;
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 25px;
-    }
-    .logo {
-      font-size: 28px;
-      font-weight: bold;
-      color: ${COLORS.primary};
-      margin-bottom: 5px;
-    }
-    .tagline {
-      color: ${COLORS.textSecondary};
-      font-size: 13px;
-    }
-    .otp-container {
-      background: ${COLORS.accent};
-      border: 2px dashed ${COLORS.primary};
-      border-radius: 10px;
-      padding: 18px;
-      text-align: center;
-      margin: 25px 0;
-    }
-    .otp-code {
-      font-size: 32px;
-      font-weight: bold;
-      color: ${COLORS.primaryDark};
-      letter-spacing: 6px;
-      font-family: 'Courier New', monospace;
-      margin: 10px 0;
-    }
-    .note {
-      font-size: 12px;
-      color: ${COLORS.textSecondary};
-    }
-    .welcome-banner {
-      background: ${COLORS.greyMint};
-      border-left: 4px solid ${COLORS.primary};
-      padding: 12px;
-      margin: 20px 0;
-      border-radius: 4px;
-      font-size: 13px;
-      color: ${COLORS.textPrimary};
-    }
-    ul {
-      padding-left: 20px;
-      margin: 10px 0;
-      font-size: 13px;
-      color: ${COLORS.textSecondary};
-    }
-    .footer {
-      text-align: center;
-      margin-top: 25px;
-      padding-top: 15px;
-      border-top: 1px solid ${COLORS.greyMedium};
-      color: ${COLORS.textSecondary};
-      font-size: 11px;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="content">
-      <div class="header">
-        <div class="logo">Feastio</div>
-        <div class="tagline">Eat smarter. Live better.</div>
-      </div>
-
-       <h2 style="text-align: center;">Welcome to Feastio</h2>
-      <p>Hello,</p>
-      <p>Thank you for joining Feastio! To complete your account setup, please verify your email address using the OTP below:</p>
-
-      <div class="otp-container">
-        <p>Your Verification Code:</p>
-        <div class="otp-code">${otp}</div>
-        <p class="note">This code will expire in 10 minutes</p>
-      </div>
-
-      <div class="welcome-banner">
-        <strong>Welcome aboard!</strong> Once verified, you'll have access to personalized nutrition tracking, smart meal recommendations, and insights to help you live healthier.
-      </div>
-
-      <p>For your security:</p>
-      <ul>
-        <li>Don't share this OTP with anyone</li>
-        <li>Use this OTP only on the Feastio mobile app</li>
-        <li>Complete verification to unlock all features</li>
-      </ul>
-
-      <div class="footer">
-        <p>This email was sent from Feastio. For any questions, contact our support team.</p>
-        <p>&copy; 2025 Feastio. All rights reserved.</p>
-      </div>
-    </div>
-  </div>
-</body>
-</html>
-    `,
-    text: `
-     Welcome to Feastio - Account Verification
-
-Hello,
-
-Thank you for joining Feastio! Please verify your account with the OTP below.
-
-Your Verification Code: ${otp}
-
-This code will expire in 10 minutes.
-
-For security, don't share this OTP with anyone.
-
-Welcome aboard! Once verified, you'll have access to personalized nutrition tracking and smart meal recommendations.
-
-- Feastio Team
-    `,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Registration OTP email sent:", info.response);
-  } catch (err) {
-    console.error("Error sending registration OTP email:", err);
-    throw err;
-  }
 };
 
 export const generateOTP = () => {
   return crypto.randomInt(100000, 999999).toString();
 };
 
+export const sendOTPEmail = async (email, otp) => {
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "Feastio <onboarding@resend.dev>", // use your verified domain later
+      to: email,
+      subject: "OTP Verification Code",
+      html: getOTPEmailHTML(otp),
+      text: `Welcome to Feastio!\n\nYour Verification Code: ${otp}\n\nThis code expires in 10 minutes. Don't share it with anyone.\n\n- Feastio Team`,
+    });
+
+    if (error) {
+      console.error("Error sending registration OTP email:", error);
+      throw new Error(error.message);
+    }
+
+    console.log("Registration OTP email sent:", data.id);
+  } catch (err) {
+    console.error("Error sending registration OTP email:", err);
+    throw err;
+  }
+};
+
 export const sendPasswordResetOTP = async (email, otp, username = "User") => {
-  const mailOptions = {
-    from: `"Feastio" <${process.env.EMAIL_USER}>`,
-    to: email,
-    subject: "Password Reset OTP - Feastio",
-    html: `
-     <!DOCTYPE html>
+  try {
+    const { data, error } = await resend.emails.send({
+      from: "Feastio <onboarding@resend.dev>",
+      to: email,
+      subject: "Password Reset OTP - Feastio",
+      html: getPasswordResetHTML(otp, username),
+      text: `Password Reset OTP - Feastio\n\nHello ${username},\n\nYour OTP Code: ${otp}\n\nThis code expires in 10 minutes. If you didn't request this, ignore this email.\n\n- Feastio Team`,
+    });
+
+    if (error) {
+      console.error("Error sending password reset OTP email:", error);
+      throw new Error(error.message);
+    }
+
+    console.log("Password reset OTP email sent:", data.id);
+  } catch (err) {
+    console.error("Error sending password reset OTP email:", err);
+    throw err;
+  }
+};
+
+// --- HTML helpers (your existing templates, unchanged) ---
+
+function getOTPEmailHTML(otp) {
+  return `<!DOCTYPE html>
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      line-height: 1.6;
-      color: ${COLORS.textPrimary};
-      max-width: 480px;
-      margin: 0 auto;
-      padding: 15px;
-      background-color: ${COLORS.background};
-    }
-    .container {
-      background: ${COLORS.primaryLight};
-      padding: 2px;
-      border-radius: 12px;
-    }
-    .content {
-      background: ${COLORS.white};
-      padding: 25px;
-      border-radius: 10px;
-    }
-    .header {
-      text-align: center;
-      margin-bottom: 25px;
-    }
-    .logo {
-      font-size: 28px;
-      font-weight: bold;
-      color: ${COLORS.primary};
-      margin-bottom: 5px;
-    }
-    .tagline {
-      color: ${COLORS.textSecondary};
-      font-size: 13px;
-    }
-    .otp-container {
-      background: ${COLORS.accent};
-      border: 2px dashed ${COLORS.primary};
-      border-radius: 10px;
-      padding: 18px;
-      text-align: center;
-      margin: 25px 0;
-    }
-    .otp-code {
-      font-size: 32px;
-      font-weight: bold;
-      color: ${COLORS.primaryDark};
-      letter-spacing: 6px;
-      font-family: 'Courier New', monospace;
-      margin: 10px 0;
-    }
-    .note {
-      font-size: 12px;
-      color: ${COLORS.textSecondary};
-    }
-    .warning {
-      background: ${COLORS.sageLight};
-      border-left: 4px solid ${COLORS.sage};
-      padding: 12px;
-      margin: 20px 0;
-      border-radius: 4px;
-      font-size: 13px;
-    }
-    ul {
-      padding-left: 20px;
-      margin: 10px 0;
-      font-size: 13px;
-      color: ${COLORS.textSecondary};
-    }
-    .footer {
-      text-align: center;
-      margin-top: 25px;
-      padding-top: 15px;
-      border-top: 1px solid ${COLORS.greyMedium};
-      color: ${COLORS.textSecondary};
-      font-size: 11px;
-    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: ${COLORS.textPrimary}; max-width: 480px; margin: 0 auto; padding: 15px; background-color: ${COLORS.background}; }
+    .container { background: ${COLORS.primaryLight}; padding: 2px; border-radius: 12px; }
+    .content { background: ${COLORS.white}; padding: 25px; border-radius: 10px; }
+    .header { text-align: center; margin-bottom: 25px; }
+    .logo { font-size: 28px; font-weight: bold; color: ${COLORS.primary}; margin-bottom: 5px; }
+    .tagline { color: ${COLORS.textSecondary}; font-size: 13px; }
+    .otp-container { background: ${COLORS.accent}; border: 2px dashed ${COLORS.primary}; border-radius: 10px; padding: 18px; text-align: center; margin: 25px 0; }
+    .otp-code { font-size: 32px; font-weight: bold; color: ${COLORS.primaryDark}; letter-spacing: 6px; font-family: 'Courier New', monospace; margin: 10px 0; }
+    .note { font-size: 12px; color: ${COLORS.textSecondary}; }
+    .welcome-banner { background: ${COLORS.greyMint}; border-left: 4px solid ${COLORS.primary}; padding: 12px; margin: 20px 0; border-radius: 4px; font-size: 13px; }
+    ul { padding-left: 20px; margin: 10px 0; font-size: 13px; color: ${COLORS.textSecondary}; }
+    .footer { text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px solid ${COLORS.greyMedium}; color: ${COLORS.textSecondary}; font-size: 11px; }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="content">
-      <div class="header">
-        <div class="logo">Feastio</div>
-        <div class="tagline">Eat smarter. Live better.</div>
-      </div>
-
-      <h2 style="text-align: center;">Password Reset Request</h2>
-      <p>Hello ${username},</p>
-      <p>We received a request to reset your password. Use the OTP below to reset it securely:</p>
-
-      <div class="otp-container">
-        <p>Your OTP Code:</p>
-        <div class="otp-code">${otp}</div>
-        <p class="note">This code will expire in 10 minutes</p>
-      </div>
-
-      <div class="warning">
-        <strong>Security Notice:</strong> If you didn't request this password reset, please ignore this email. Your account remains secure.
-      </div>
-
-      <p>For your security:</p>
-      <ul>
-        <li>Don't share this OTP with anyone</li>
-        <li>Use this OTP only on the Feastio mobile app</li>
-      </ul>
-
-      <div class="footer">
-        <p>This email was sent from Feastio. For any questions, contact our support team.</p>
-        <p>&copy; 2025 Feastio. All rights reserved.</p>
-      </div>
+  <div class="container"><div class="content">
+    <div class="header">
+      <div class="logo">Feastio</div>
+      <div class="tagline">Eat smarter. Live better.</div>
     </div>
-  </div>
+    <h2 style="text-align:center;">Welcome to Feastio</h2>
+    <p>Hello,</p>
+    <p>Thank you for joining Feastio! To complete your account setup, please verify your email using the OTP below:</p>
+    <div class="otp-container">
+      <p>Your Verification Code:</p>
+      <div class="otp-code">${otp}</div>
+      <p class="note">This code will expire in 10 minutes</p>
+    </div>
+    <div class="welcome-banner"><strong>Welcome aboard!</strong> Once verified, you'll have access to personalized nutrition tracking, smart meal recommendations, and insights to help you live healthier.</div>
+    <p>For your security:</p>
+    <ul>
+      <li>Don't share this OTP with anyone</li>
+      <li>Use this OTP only on the Feastio mobile app</li>
+      <li>Complete verification to unlock all features</li>
+    </ul>
+    <div class="footer"><p>This email was sent from Feastio. For any questions, contact our support team.</p><p>&copy; 2025 Feastio. All rights reserved.</p></div>
+  </div></div>
 </body>
-</html>
-    `,
-    text: `
-     Password Reset OTP - Feastio
+</html>`;
+}
 
-Hello ${username},
-
-We received a request to reset your password.
-
-Your OTP Code: ${otp}
-
-This code will expire in 10 minutes.
-
-If you didn't request this password reset, please ignore this email.
-
-For security, don't share this OTP with anyone.
-
-- Feastio Team
-    `,
-  };
-
-  try {
-    const info = await transporter.sendMail(mailOptions);
-    console.log("OTP email sent:", info.response);
-  } catch (err) {
-    console.error("Error sending OTP email:", err);
-    throw err;
-  }
-};
+function getPasswordResetHTML(otp, username) {
+  return `<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: ${COLORS.textPrimary}; max-width: 480px; margin: 0 auto; padding: 15px; background-color: ${COLORS.background}; }
+    .container { background: ${COLORS.primaryLight}; padding: 2px; border-radius: 12px; }
+    .content { background: ${COLORS.white}; padding: 25px; border-radius: 10px; }
+    .header { text-align: center; margin-bottom: 25px; }
+    .logo { font-size: 28px; font-weight: bold; color: ${COLORS.primary}; margin-bottom: 5px; }
+    .tagline { color: ${COLORS.textSecondary}; font-size: 13px; }
+    .otp-container { background: ${COLORS.accent}; border: 2px dashed ${COLORS.primary}; border-radius: 10px; padding: 18px; text-align: center; margin: 25px 0; }
+    .otp-code { font-size: 32px; font-weight: bold; color: ${COLORS.primaryDark}; letter-spacing: 6px; font-family: 'Courier New', monospace; margin: 10px 0; }
+    .note { font-size: 12px; color: ${COLORS.textSecondary}; }
+    .warning { background: ${COLORS.sageLight}; border-left: 4px solid ${COLORS.sage}; padding: 12px; margin: 20px 0; border-radius: 4px; font-size: 13px; }
+    ul { padding-left: 20px; margin: 10px 0; font-size: 13px; color: ${COLORS.textSecondary}; }
+    .footer { text-align: center; margin-top: 25px; padding-top: 15px; border-top: 1px solid ${COLORS.greyMedium}; color: ${COLORS.textSecondary}; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <div class="container"><div class="content">
+    <div class="header">
+      <div class="logo">Feastio</div>
+      <div class="tagline">Eat smarter. Live better.</div>
+    </div>
+    <h2 style="text-align:center;">Password Reset Request</h2>
+    <p>Hello ${username},</p>
+    <p>We received a request to reset your password. Use the OTP below to reset it securely:</p>
+    <div class="otp-container">
+      <p>Your OTP Code:</p>
+      <div class="otp-code">${otp}</div>
+      <p class="note">This code will expire in 10 minutes</p>
+    </div>
+    <div class="warning"><strong>Security Notice:</strong> If you didn't request this password reset, please ignore this email. Your account remains secure.</div>
+    <p>For your security:</p>
+    <ul>
+      <li>Don't share this OTP with anyone</li>
+      <li>Use this OTP only on the Feastio mobile app</li>
+    </ul>
+    <div class="footer"><p>This email was sent from Feastio. For any questions, contact our support team.</p><p>&copy; 2025 Feastio. All rights reserved.</p></div>
+  </div></div>
+</body>
+</html>`;
+}
